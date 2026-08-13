@@ -71,3 +71,6 @@ each extension bundle ID (`DeviceActivityMonitorExtension`,
 `ShieldConfigurationExtension`, `ShieldActionExtension`,
 `DeviceActivityReportExtension`). It's the long pole on the (out-of-this-build)
 Phase 3 blocker.
+
+See [docs/family-controls-entitlement.md](docs/family-controls-entitlement.md)
+for the step-by-step filing checklist, App-ID tracking table, and justification draft.
