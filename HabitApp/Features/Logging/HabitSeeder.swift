@@ -27,7 +27,7 @@ enum HabitSeeder {
 
             // Break — cost per slip (minutes burned).
             Habit(name: "Doomscroll session", kind: .breakHabit, costMinutes: 20, sortOrder: 5),
-            Habit(name: "Porn", kind: .breakHabit, costMinutes: 30, sortOrder: 6),
+            Habit(name: "Porn", displayLabel: "Explicit content", kind: .breakHabit, costMinutes: 30, sortOrder: 6),
             Habit(name: "Cigarette", kind: .breakHabit, costMinutes: 30, sortOrder: 7),
             Habit(name: "Late-night phone", kind: .breakHabit, costMinutes: 20, sortOrder: 8),
         ]
