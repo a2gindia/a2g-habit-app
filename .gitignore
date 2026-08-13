@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Xcode build output / derived data
+.build-xcode/
+DerivedData/
+build/
+*.xcuserstate
+
+# Xcode user-specific state (shared schemes under xcshareddata ARE committed)
+xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
