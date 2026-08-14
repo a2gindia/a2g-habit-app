@@ -34,6 +34,11 @@ final class Habit {
 
     var sortOrder: Int
 
+    /// Archived habits are hidden from logging but keep their history — deleting
+    /// would cascade away the logs. Default keeps existing rows active (lightweight
+    /// migration).
+    var isArchived: Bool = false
+
     @Relationship(deleteRule: .cascade, inverse: \HabitLog.habit)
     var logs: [HabitLog] = []
 
@@ -44,7 +49,8 @@ final class Habit {
          rewardMinutes: Int = 0,
          usesLoggedDuration: Bool = false,
          costMinutes: Int = 0,
-         sortOrder: Int = 0) {
+         sortOrder: Int = 0,
+         isArchived: Bool = false) {
         self.name = name
         self.displayLabel = displayLabel
         self.kind = kind
@@ -53,6 +59,7 @@ final class Habit {
         self.usesLoggedDuration = usesLoggedDuration
         self.costMinutes = costMinutes
         self.sortOrder = sortOrder
+        self.isArchived = isArchived
     }
 
     var label: String { displayLabel ?? name }

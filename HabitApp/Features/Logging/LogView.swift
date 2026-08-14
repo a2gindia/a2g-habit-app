@@ -16,8 +16,10 @@ struct LogView: View {
     private var lightsOutHour: Int { configs.first?.lightsOutHour ?? Tuning.defaultLightsOutHour }
     private var todayStart: Date { DayBoundary(lightsOutHour: lightsOutHour).logicalDayStart(for: .now) }
 
-    private var buildHabits: [Habit] { habits.filter { $0.kind == .build } }
-    private var breakHabits: [Habit] { habits.filter { $0.kind == .breakHabit } }
+    @State private var managing = false
+
+    private var buildHabits: [Habit] { habits.filter { $0.kind == .build && !$0.isArchived } }
+    private var breakHabits: [Habit] { habits.filter { $0.kind == .breakHabit && !$0.isArchived } }
 
     var body: some View {
         NavigationStack {
@@ -30,10 +32,27 @@ struct LogView: View {
                 }
             }
             .navigationTitle("Log")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { managing = true } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                    .accessibilityIdentifier("log.manage")
+                    .accessibilityLabel("Manage habits")
+                }
+            }
             .sheet(item: $durationHabit) { habit in
                 DurationEntrySheet(habit: habit) { minutes in
                     log(habit, durationMinutes: minutes)
                 }
+            }
+            .sheet(isPresented: $managing) {
+                HabitListView()
+            }
+            .onAppear {
+                #if DEBUG
+                if ProcessInfo.processInfo.environment["DEMO_OPEN_HABITS"] == "1" { managing = true }
+                #endif
             }
         }
     }
