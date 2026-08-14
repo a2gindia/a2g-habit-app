@@ -64,37 +64,51 @@ struct LogView: View {
         return HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(habit.label)
-                if count > 0 {
-                    Text(habit.usesLoggedDuration ? "\(todayMinutes(habit)) min today" : "done \(count)×")
+                if habit.usesLoggedDuration, count > 0 {
+                    Text("\(todayMinutes(habit)) min today")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
             Spacer()
-            Button {
-                if habit.usesLoggedDuration { durationHabit = habit }
-                else { log(habit) }
-            } label: {
-                Image(systemName: "plus.circle.fill").font(.title2)
+            logStepper(habit, count: count, addTint: .accentColor) {
+                if habit.usesLoggedDuration { durationHabit = habit } else { log(habit) }
             }
-            .buttonStyle(.borderless)
-            .accessibilityIdentifier("log.\(slug(habit.name))")
         }
     }
 
     private func breakRow(_ habit: Habit) -> some View {
         let count = todayCount(habit)
         return HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(habit.label)
-                if count > 0 {
-                    Text("\(count)× today").font(.caption).foregroundStyle(.secondary)
-                }
-            }
+            Text(habit.label)
             Spacer()
-            Button("Log") { log(habit) }
-                .buttonStyle(.bordered)
-                .tint(.secondary)                       // neutral, never red
-                .accessibilityIdentifier("log.\(slug(habit.name))")
+            logStepper(habit, count: count, addTint: .secondary) { log(habit) }
+        }
+    }
+
+    /// A −/count/+ control so a mistaken tap is fixable. `−` removes today's most
+    /// recent log for this habit (disabled at 0); `+` runs `add`.
+    private func logStepper(_ habit: Habit, count: Int, addTint: Color,
+                            add: @escaping () -> Void) -> some View {
+        HStack(spacing: 16) {
+            Button { removeLastToday(habit) } label: {
+                Image(systemName: "minus.circle").font(.title2)
+            }
+            .buttonStyle(.borderless)
+            .tint(.secondary)
+            .disabled(count == 0)
+            .accessibilityIdentifier("unlog.\(slug(habit.name))")
+
+            Text("\(count)")
+                .font(.headline.monospacedDigit())
+                .frame(minWidth: 20)
+                .accessibilityIdentifier("count.\(slug(habit.name))")
+
+            Button(action: add) {
+                Image(systemName: "plus.circle.fill").font(.title2)
+            }
+            .buttonStyle(.borderless)
+            .tint(addTint)
+            .accessibilityIdentifier("log.\(slug(habit.name))")
         }
     }
 
@@ -115,6 +129,16 @@ struct LogView: View {
         try? context.save()
         // Roll today's DayScore forward at the source of the change, so the
         // dashboard (which observes DayScore) reflects it without polling all logs.
+        if let config = configs.first {
+            DayScoreStore.upsertToday(goal: goal, config: config, habits: habits, context: context)
+        }
+    }
+
+    /// Undo: delete today's most recent log for the habit, then re-roll the score.
+    private func removeLastToday(_ habit: Habit) {
+        guard let last = todaysLogs(habit).max(by: { $0.timestamp < $1.timestamp }) else { return }
+        context.delete(last)
+        try? context.save()
         if let config = configs.first {
             DayScoreStore.upsertToday(goal: goal, config: config, habits: habits, context: context)
         }

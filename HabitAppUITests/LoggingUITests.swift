@@ -1,8 +1,7 @@
 import XCTest
 
-/// Verifies logging actually records events and the flat, factual counters update
-/// — a build completion, a duration-based deep-work session, and a break-habit
-/// slip (which must log without any error/shame and without blocking).
+/// Verifies logging records events, the flat counters update, and a mistaken tap
+/// can be undone with the minus control.
 final class LoggingUITests: XCTestCase {
 
     override func setUp() { continueAfterFailure = false }
@@ -18,20 +17,33 @@ final class LoggingUITests: XCTestCase {
         return app
     }
 
+    private func expectCount(_ app: XCUIApplication, _ id: String, _ value: String) {
+        expectation(for: NSPredicate(format: "label == %@", value),
+                    evaluatedWith: app.staticTexts[id])
+        waitForExpectations(timeout: 5)
+    }
+
     func testLoggingASlipRecordsItNeutrally() {
         let app = launchIntoLog()
         app.buttons["log.cigarette"].tap()
-        XCTAssertTrue(app.staticTexts["1× today"].waitForExistence(timeout: 5),
-                      "Slip should record a neutral count")
-        // A second slip increments — logging never blocks.
-        app.buttons["log.cigarette"].tap()
-        XCTAssertTrue(app.staticTexts["2× today"].waitForExistence(timeout: 5))
+        expectCount(app, "count.cigarette", "1")
+        app.buttons["log.cigarette"].tap()          // logging never blocks
+        expectCount(app, "count.cigarette", "2")
     }
 
     func testLoggingABuildCompletion() {
         let app = launchIntoLog()
         app.buttons["log.workout"].tap()
-        XCTAssertTrue(app.staticTexts["done 1×"].waitForExistence(timeout: 5))
+        expectCount(app, "count.workout", "1")
+    }
+
+    func testUndoAMistakenLog() {
+        let app = launchIntoLog()
+        app.buttons["log.cigarette"].tap()
+        app.buttons["log.cigarette"].tap()
+        expectCount(app, "count.cigarette", "2")
+        app.buttons["unlog.cigarette"].tap()        // undo the mistaken tap
+        expectCount(app, "count.cigarette", "1")
     }
 
     func testDeepWorkDurationEntry() {
