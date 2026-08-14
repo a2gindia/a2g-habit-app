@@ -9,6 +9,7 @@ import UniformTypeIdentifiers
 struct InsightsView: View {
     @Query private var configs: [AppConfig]
     @Query(sort: \DayScore.logicalDate) private var dayScores: [DayScore]
+    @State private var showHistory = false
 
     private var boundary: DayBoundary {
         DayBoundary(lightsOutHour: configs.first?.lightsOutHour ?? Tuning.defaultLightsOutHour)
@@ -23,6 +24,15 @@ struct InsightsView: View {
     var body: some View {
         NavigationStack {
             List {
+                if !dayScores.isEmpty {
+                    Section {
+                        NavigationLink { HistoryView() } label: {
+                            Label("Day-by-day history", systemImage: "calendar")
+                        }
+                        .accessibilityIdentifier("insights.history")
+                    }
+                }
+
                 if let s = summary {
                     Section("Engagement") {
                         stat("Days logged", "\(s.daysLogged) / \(s.daysElapsed)")
@@ -57,6 +67,12 @@ struct InsightsView: View {
                 }
             }
             .navigationTitle("Insights")
+            .navigationDestination(isPresented: $showHistory) { HistoryView() }
+            .onAppear {
+                #if DEBUG
+                if ProcessInfo.processInfo.environment["DEMO_OPEN_HISTORY"] == "1" { showHistory = true }
+                #endif
+            }
         }
     }
 

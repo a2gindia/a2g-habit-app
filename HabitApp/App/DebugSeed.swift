@@ -40,7 +40,40 @@ enum DebugSeed {
             let config = AppConfig.current(in: context)
             let allHabits = (try? context.fetch(FetchDescriptor<Habit>())) ?? []
             DayScoreStore.upsertToday(goal: goal, config: config, habits: allHabits, context: context)
+
+            seedPastDays(goal: goal, config: config, context: context)
         }
+    }
+
+    /// A handful of prior days so History and the trend chart have shape.
+    private static func seedPastDays(goal: Goal, config: AppConfig, context: ModelContext) {
+        let cal = Calendar.current
+        let now = Date()
+        let boundary = DayBoundary(lightsOutHour: config.lightsOutHour)
+        let perMinute = goal.rates?.perMinute ?? 0
+        let z = config.dailyPotentialTargetMinutes
+        let potential = Decimal(z) * perMinute
+
+        // (days-ago, kept minutes, slips, deep-work minutes, mood)
+        let samples: [(Int, Int, Int, Int, Int?)] = [
+            (1, 200, 1, 120, 4), (2, 80, 3, 60, 2), (3, 240, 0, 180, 5),
+            (4, 0, 4, 0, 1), (5, 150, 1, 90, 3), (6, 190, 2, 100, 4),
+        ]
+        for (ago, keptMin, slips, deep, mood) in samples {
+            guard let date = cal.date(byAdding: .day, value: -ago, to: now) else { continue }
+            let start = boundary.logicalDayStart(for: date)
+            let kept = Decimal(keptMin) * perMinute
+            let ds = DayScore(
+                logicalDate: start,
+                variant: FramingRotation.variant(for: start, anchor: config.variantAnchorDate, boundary: boundary),
+                perMinuteRate: perMinute, potentialZMinutes: z,
+                grossEarnedMinutes: deep, streakMultiplier: 1.0,
+                honestyBonusMinutes: slips * 5, slipMinutes: slips * 30,
+                keptAmount: kept, slippedAmount: max(0, potential - kept),
+                deepWorkMinutes: deep, slipCount: slips, mood: mood)
+            context.insert(ds)
+        }
+        try? context.save()
     }
 }
 #endif
