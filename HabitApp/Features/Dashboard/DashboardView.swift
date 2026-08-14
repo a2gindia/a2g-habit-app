@@ -13,6 +13,7 @@ struct DashboardView: View {
     @Query private var dayScores: [DayScore]
 
     @State private var editingGoal = false
+    @State private var editingConfig = false
 
     private var config: AppConfig? { configs.first }
     private var snapshot: DayScoreService.Snapshot? {
@@ -49,6 +50,13 @@ struct DashboardView: View {
             .navigationTitle("Today")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button { editingConfig = true } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityIdentifier("dashboard.editConfig")
+                    .accessibilityLabel("Settings")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     Button { editingGoal = true } label: {
                         Image(systemName: "slider.horizontal.3")
                     }
@@ -59,6 +67,9 @@ struct DashboardView: View {
             .sheet(isPresented: $editingGoal) {
                 GoalEditView(goal: goal)
             }
+            .sheet(isPresented: $editingConfig) {
+                if let config { ConfigEditView(config: config, goal: goal) }
+            }
         }
         // Logging upserts the DayScore at its source (LogView), which this view
         // observes via @Query dayScores; onAppear is the safety net so today's row
@@ -67,6 +78,7 @@ struct DashboardView: View {
             persistToday()
             #if DEBUG
             if ProcessInfo.processInfo.environment["DEMO_OPEN_GOAL_EDIT"] == "1" { editingGoal = true }
+            if ProcessInfo.processInfo.environment["DEMO_OPEN_CONFIG"] == "1" { editingConfig = true }
             #endif
         }
     }
