@@ -12,6 +12,8 @@ struct DashboardView: View {
     @Query(sort: \Habit.sortOrder) private var habits: [Habit]
     @Query private var dayScores: [DayScore]
 
+    @State private var editingGoal = false
+
     private var config: AppConfig? { configs.first }
     private var snapshot: DayScoreService.Snapshot? {
         guard let config else { return nil }
@@ -45,11 +47,28 @@ struct DashboardView: View {
                 .padding()
             }
             .navigationTitle("Today")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { editingGoal = true } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                    .accessibilityIdentifier("dashboard.editGoal")
+                    .accessibilityLabel("Edit goal")
+                }
+            }
+            .sheet(isPresented: $editingGoal) {
+                GoalEditView(goal: goal)
+            }
         }
         // Logging upserts the DayScore at its source (LogView), which this view
         // observes via @Query dayScores; onAppear is the safety net so today's row
         // exists even before any log.
-        .onAppear { persistToday() }
+        .onAppear {
+            persistToday()
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["DEMO_OPEN_GOAL_EDIT"] == "1" { editingGoal = true }
+            #endif
+        }
     }
 
     // MARK: headline (gain/loss — the only branch is inside FramingPresenter)
